@@ -140,7 +140,7 @@
             border-color: var(--border-summary);
         }
 
-        .search-container { margin-bottom: 15px; width: 100%; }
+        .search-container { margin-bottom: 5px; width: 100%; }
         #searchInput { 
             width: 100%; 
             padding: 12px 20px; 
@@ -154,7 +154,17 @@
         }
         #searchInput:focus { border-color: var(--border-summary); outline: none; }
         
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        /* NOVÉ: Styl pro text s dynamickým souhrnem pod vyhledávačem */
+        .filter-summary {
+            text-align: right;
+            font-size: 0.95rem;
+            color: var(--text-summary-count);
+            font-weight: 600;
+            margin-bottom: 10px;
+            height: 20px; /* Pevná výška, aby tabulka neskákala nahoru a dolů */
+        }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 5px; }
         th, td { padding: 12px; text-align: left; border-bottom: 1px solid var(--border-td); }
         th { background-color: var(--bg-th); color: white; transition: background-color 0.3s; }
         tr:hover { background-color: var(--bg-hover); }
@@ -214,6 +224,8 @@
             <div class="search-container">
                 <input type="text" id="searchInput" placeholder="Hledej linku (např. 101)...">
             </div>
+            
+            <div id="filter-summary" class="filter-summary"></div>
 
             <table>
                 <thead>
@@ -237,19 +249,18 @@
         const WEATHER_URL = 'https://api.open-meteo.com/v1/forecast?latitude=50.088&longitude=14.4208&current_weather=true';
 
         let activeCategory = 'all';
-        let isCold = false; // Globální pojistka
+        let isCold = false;
 
-        // Načtení počasí z Open-Meteo
         async function fetchWeather() {
             try {
                 const res = await fetch(WEATHER_URL);
                 if (!res.ok) throw new Error('Chyba počasí');
                 const weatherData = await res.json();
+                
                 const temp = Math.round(weatherData.current_weather.temperature);
                 
                 document.getElementById('weather-box').innerHTML = `Praha: <strong>${temp} °C</strong> 🌡️`;
 
-                // Vyhodnocení teploty
                 if (temp < 22) {
                     isCold = true;
                     document.getElementById('main-app').style.display = 'none';
@@ -258,12 +269,11 @@
                     isCold = false;
                     document.getElementById('cold-message').style.display = 'none';
                     document.getElementById('main-app').style.display = 'block';
-                    fetchVehicleData(); // Spustit Golemio jen když je teplo
+                    fetchVehicleData(); 
                 }
             } catch (err) {
                 console.error("Nepodařilo se načíst počasí", err);
                 document.getElementById('weather-box').innerHTML = `Praha: <strong>Teplota nedostupná</strong> 🌡️`;
-                // Pokud počasí selže, ukážeme aplikaci jako pojistku
                 isCold = false;
                 document.getElementById('cold-message').style.display = 'none';
                 document.getElementById('main-app').style.display = 'block';
@@ -271,7 +281,7 @@
             }
         }
 
-        // Aplikace filtrů tabulky
+        // UPRAVENÁ FUNKCE PRO FILTROVÁNÍ A DYNAMICKÝ SOUČET
         function applyFilter() {
             const searchInput = document.getElementById('searchInput');
             if (!searchInput) return;
@@ -279,22 +289,45 @@
             const searchTerm = searchInput.value.trim().toLowerCase();
             const rows = document.querySelectorAll('#lines-table-body tr[data-line]');
             
+            let filteredAc = 0;
+            let filteredTotal = 0;
+
             rows.forEach(row => {
                 const line = row.getAttribute('data-line');
                 const type = row.getAttribute('data-type');
+                
+                // Zjištění skrytých hodnot pro výpočet z aktuálního řádku
+                const rowAc = parseInt(row.getAttribute('data-ac'), 10) || 0;
+                const rowTotal = parseInt(row.getAttribute('data-total'), 10) || 0;
 
                 const matchesSearch = line && line.includes(searchTerm);
                 const matchesCategory = (activeCategory === 'all' || type === activeCategory);
 
                 if (matchesSearch && matchesCategory) {
                     row.style.display = '';
+                    // Přičítáme do dynamického filtru
+                    filteredAc += rowAc;
+                    filteredTotal += rowTotal;
                 } else {
                     row.style.display = 'none';
                 }
             });
+
+            // Aktualizace textu s dynamickým souhrnem
+            const filterSummaryEl = document.getElementById('filter-summary');
+            if (activeCategory === 'all' && searchTerm === '') {
+                // Pokud uživatel nic nehledá, text schováme (celkový součet je nahoře)
+                filterSummaryEl.innerHTML = '';
+            } else {
+                if (filteredTotal > 0) {
+                    const pct = ((filteredAc / filteredTotal) * 100).toFixed(1);
+                    filterSummaryEl.innerHTML = `Výběr: ${filteredAc} z ${filteredTotal} vozidel s klimatizací (${pct} %)`;
+                } else {
+                    filterSummaryEl.innerHTML = `Výběr: 0 vozidel`;
+                }
+            }
         }
 
-        // Tlačítka
         document.querySelectorAll('.filter-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
@@ -304,9 +337,8 @@
             });
         });
 
-        // Samotné stahování z Golemia
         async function fetchVehicleData() {
-            if (isCold) return; // Pokud je zima, ukonči funkci a nezatěžuj Golemio
+            if (isCold) return; 
 
             try {
                 const response = await fetch(URL, {
@@ -388,8 +420,11 @@
                         else if ((numLine >= 90 && numLine <= 99) || (numLine >= 901 && numLine <= 949)) vehicleType = 'night';
 
                         const row = document.createElement('tr');
+                        // NOVÉ: Uložení syrových dat o počtech přímo do HTML atributů řádku pro funkci applyFilter()
                         row.setAttribute('data-line', line.toLowerCase()); 
                         row.setAttribute('data-type', vehicleType); 
+                        row.setAttribute('data-ac', stats.ac); 
+                        row.setAttribute('data-total', stats.total);
                         
                         row.innerHTML = `
                             <td><strong>${line}</strong></td>
@@ -419,12 +454,10 @@
 
         document.getElementById('searchInput').addEventListener('input', applyFilter);
 
-        // Zapnutí aplikace -> Nejdřív zjistíme počasí
         fetchWeather();
         
-        // Intervaly
-        setInterval(fetchVehicleData, 30000); // 30 sec pro vozidla (pokud není zima)
-        setInterval(fetchWeather, 300000);    // 5 minut pro počasí
+        setInterval(fetchVehicleData, 30000); 
+        setInterval(fetchWeather, 300000);    
     </script>
 </body>
 </html>
