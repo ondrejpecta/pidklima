@@ -161,7 +161,14 @@
             color: var(--text-summary-count);
             font-weight: 600;
             margin-bottom: 10px;
-            height: 20px; /* Pevná výška, aby tabulka neskákala nahoru a dolů */
+            min-height: 22px;
+            line-height: 1.4;
+        }
+
+        @media (max-width: 600px) {
+            .filter-summary {
+                text-align: center;
+            }
         }
 
         table { width: 100%; border-collapse: collapse; margin-top: 5px; }
