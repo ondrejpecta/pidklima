@@ -226,6 +226,7 @@
                 <button class="filter-btn" data-filter="trolley">Trolejbusy 🚎</button>
                 <button class="filter-btn" data-filter="bus">Autobusy 🚌</button>
                 <button class="filter-btn" data-filter="night">Noční 🌙</button>
+                <button class="filter-btn" data-filter="detour">Výluka 🚧</button>
             </div>
             
             <div class="search-container">
@@ -381,12 +382,27 @@
                         if (routeName) {
                             const lineNumber = parseInt(routeName, 10);
 
-                            if (!isNaN(lineNumber) && (
+                            let isAllowedXLine = false;
+                            if (routeName.startsWith("X")) {
+                                const xSuffix = routeName.substring(1); 
+                                const xNum = parseInt(xSuffix, 10);
+                                
+                                if (isNaN(xNum)) {
+                                    
+                                    isAllowedXLine = true;
+                                } else {
+                                    if ((xNum >= 1 && xNum <= 250) || (xNum >= 901 && xNum <= 949)) {
+                                        isAllowedXLine = true;
+                                    }
+                                }
+                            }
+                            const isNormalLine = !isNaN(lineNumber) && (
                                 (lineNumber >= 1 && lineNumber <= 299) || 
                                 (lineNumber >= 901 && lineNumber <= 949) ||
-                                (lineNumber >= 90 && lineNumber <= 99) 
-                            ))                            
-                            {
+                                (lineNumber >= 90 && lineNumber <= 99) ||
+                                lineNumber === 836
+                            );
+                            if (isNormalLine || isAllowedXLine) {
                                 if (!lineStats[routeName]) {
                                     lineStats[routeName] = { ac: 0, total: 0 };
                                 }
@@ -402,7 +418,6 @@
                         }
                     });
                 }
-
                 const globalPercent = totalGlobalVehicles > 0 ? ((totalGlobalAc / totalGlobalVehicles) * 100).toFixed(1) : 0;
                 document.getElementById('global-result').innerText = `${totalGlobalAc} z ${totalGlobalVehicles} vozidel`;
                 document.getElementById('global-details').innerText = `V Praze se teď ochladíš v ${globalPercent} % vozidel ❄️`;
@@ -425,6 +440,7 @@
                         else if (numLine >= 50 && numLine <= 89) vehicleType = 'trolley';
                         else if (numLine >= 100 && numLine <= 299) vehicleType = 'bus';
                         else if ((numLine >= 90 && numLine <= 99) || (numLine >= 901 && numLine <= 949)) vehicleType = 'night';
+                        else if (line.toUpperCase().startsWith("X")) vehicleType = 'detour';
 
                         const row = document.createElement('tr');
                         // NOVÉ: Uložení syrových dat o počtech přímo do HTML atributů řádku pro funkci applyFilter()
