@@ -425,7 +425,15 @@
                 const tableBody = document.getElementById('lines-table-body');
                 tableBody.innerHTML = ''; 
 
-                const sortedLines = Object.keys(lineStats).sort((a, b) => parseInt(a, 10) - parseInt(b, 10));
+                const sortedLines = Object.keys(lineStats).sort((a, b) => {
+                    const numA = parseInt(a, 10);
+                    const numB = parseInt(b, 10);
+    
+                        if (isNaN(numA) && isNaN(numB)) return a.localeCompare(b); // Obě jsou text (např. XA a XC) -> seřadí podle abecedy
+                        if (isNaN(numA)) return 1;  // První je text, druhá číslo -> text hodí na konec
+                        if (isNaN(numB)) return -1; // Druhá je text, první číslo -> číslo zůstane vepředu
+                        return numA - numB;         // Obě jsou čísla -> klasické číselné řazení
+                    });
 
                 if (sortedLines.length === 0) {
                     tableBody.innerHTML = '<tr><td colspan="3" style="text-align:center;">Aktuálně nebyly nalezeny žádné aktivní linky.</td></tr>';
