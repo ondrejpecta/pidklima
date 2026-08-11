@@ -205,8 +205,8 @@
         </div>
 
         <div id="cold-message" class="cold-message" style="display: none;">
-            <h2>Co blázníš, vždyť je zima! 🥶</h2>
-            <p>Brácho, venku je pod 22 °C. Co bys chtěl jako klimatizovat?<br>Otevři si okýnko, dej si svetr a buď rád, že se nepotíš. 😅<br><br><i>Statistiky o klimatizacích se automaticky zapnou, až se zase oteplí.</i></p>
+            <h2>K čemu teď klimatizovat?</h2>
+            <p>Venkovní teplota je pod 22 °C 😌<br>Šetříme energii, klimatizace dle platných standardů PID není vyžadována.<br><br><i>Statistika budě opět dostupná, až to bude potřeba</i></p>
         </div>
 
         <div id="main-app" style="display: none;">
@@ -460,7 +460,7 @@
                 
                 const globalPercent = totalGlobalVehicles > 0 ? ((totalGlobalAc / totalGlobalVehicles) * 100).toFixed(1) : 0;
                 document.getElementById('global-result').innerText = `${totalGlobalAc} z ${totalGlobalVehicles} vozidel`;
-                document.getElementById('global-details').innerText = `V Praze se teď ochladíš v ${globalPercent} % vozidel ❄️`;
+                document.getElementById('global-details').innerText = `Ochladíš se v ${globalPercent} % vozidel ❄️`;
 
                 const tableBody = document.getElementById('lines-table-body');
                 tableBody.innerHTML = ''; 
